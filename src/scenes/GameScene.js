@@ -42,7 +42,7 @@ export default class GameScene extends Phaser.Scene {
         this.entityManager = null;
         this.player = null;
         this.playerWorldPos = { x: 0, y: 0 }; // Global world position
-        this.occupancy = new Map();
+        this.occupancy = {};
         this.lastMoveTime = 0;
         this.health = 5;
         this.maxHealth = 5;
@@ -128,7 +128,7 @@ export default class GameScene extends Phaser.Scene {
 
         this.mapLayer = this.add.layer();
         this.actorLayer = this.add.layer();
-        this.occupancy.clear();
+        this.occupancy = {};
         this.switches = [];
         this.doors.clear();
         this.enemies = [];
@@ -771,7 +771,7 @@ export default class GameScene extends Phaser.Scene {
     setOccupant(x, y, payload) {
         const key = this.tileKey(x, y);
         if (!payload) {
-            this.occupancy.delete(key);
+            delete this.occupancy[key];
             return;
         }
         if (payload.type === 'enemy') {
@@ -779,11 +779,12 @@ export default class GameScene extends Phaser.Scene {
         } else if (payload.type === 'box' && payload.data) {
             payload.data.position = { x, y };
         }
-        this.occupancy.set(key, payload);
+        this.occupancy[key] = payload;
     }
 
     getOccupant(x, y) {
-        const payload = this.occupancy.get(this.tileKey(x, y));
+        const key = this.tileKey(x, y);
+        const payload = this.occupancy[key];
         if (payload) {
             return payload;
         }
