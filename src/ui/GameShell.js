@@ -38,41 +38,11 @@ export default function GameShell() {
     const [touchSupported, setTouchSupported] = useState(false);
 
     const applyScale = useCallback(() => {
-        const container = containerRef.current;
         const game = gameRef.current;
-        if (!container || !game) {
+        if (!game) {
             return;
         }
 
-        const bounds = container.getBoundingClientRect();
-        const targetWidth = bounds.width;
-        const targetHeight = bounds.height;
-        if (!targetWidth || !targetHeight) {
-            return;
-        }
-
-        const scale = Math.min(targetWidth / GAME_WIDTH, targetHeight / GAME_HEIGHT);
-        const displayWidth = Math.floor(GAME_WIDTH * scale);
-        const displayHeight = Math.floor(GAME_HEIGHT * scale);
-        const canvas = game.canvas;
-        if (!canvas) {
-            return;
-        }
-
-        canvas.style.width = `${displayWidth}px`;
-        canvas.style.height = `${displayHeight}px`;
-        canvas.style.imageRendering = 'pixelated';
-        canvas.style.maxWidth = '100%';
-        canvas.style.maxHeight = '100%';
-
-        const dpr = window.devicePixelRatio || 1;
-        const resolution = Math.min(3, Math.max(1, Math.round(dpr)));
-        if (game.renderer?.resize) {
-            game.renderer.resize(GAME_WIDTH * resolution, GAME_HEIGHT * resolution);
-        }
-
-        game.scale.setZoom(scale);
-        game.scale.resize(GAME_WIDTH, GAME_HEIGHT);
         game.scale.refresh();
     }, []);
 
@@ -91,7 +61,7 @@ export default function GameShell() {
 
         const throttledResize = throttle(() => applyScale(), RESIZE_THROTTLE_MS);
         const observer = new ResizeObserver(throttledResize);
-        observer.observe(container);
+        observer.observe(host);
 
         const windowResize = throttle(() => applyScale(), RESIZE_THROTTLE_MS);
         window.addEventListener('resize', windowResize);
