@@ -1,9 +1,7 @@
 const Phaser = window.Phaser;
 
 import BootScene from './scenes/BootScene.js';
-import TitleScene from './scenes/TitleScene.js';
 import GameScene from './scenes/GameScene.js';
-import UIScene from './scenes/UIScene.js';
 
 export const GAME_WIDTH = 640;
 export const GAME_HEIGHT = 360;
@@ -44,7 +42,7 @@ function buildConfig(parent) {
             height: GAME_HEIGHT,
             expandParent: true,
         },
-        scene: [BootScene, TitleScene, GameScene, UIScene],
+        scene: [BootScene, GameScene],
     };
 }
 

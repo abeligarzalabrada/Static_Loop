@@ -112,7 +112,10 @@ export default class WorldManager {
                     x = Math.floor(rand.random() * CHUNK_SIZE);
                     y = Math.floor(rand.random() * CHUNK_SIZE);
                 }
-                tiles[y][x] = feature.type;
+                // Ensure the tile exists before setting it
+                if (tiles[y] && tiles[y][x] !== undefined) {
+                    tiles[y][x] = feature.type;
+                }
             }
         });
 
