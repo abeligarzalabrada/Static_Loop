@@ -94,8 +94,14 @@ export default class GameScene extends Phaser.Scene {
             this.renderChunk(chunkKey);
         }
 
-        // Place or update player
+        // Place or update player - ensure it's visible
         this.placePlayer();
+        
+        // Ensure player is on top and visible
+        if (this.player) {
+            this.player.setDepth(1000);
+            this.player.setVisible(true);
+        }
 
         // Spawn entities from chunks
         this.spawnEntitiesFromChunks();
@@ -118,7 +124,7 @@ export default class GameScene extends Phaser.Scene {
                 const worldY = chunkWorldY + y * 16 + 8;
                 const sprite = this.add.image(worldX, worldY, `tile-${tile}`).setOrigin(0.5);
                 this.mapLayer.add(sprite);
-                if (tile === 'tree' || tile === 'rock' || tile === 'bush' || tile === 'cactus') {
+                if (tile === 'wall' || tile === 'rock' || tile === 'door-blue' || tile === 'door-green' || tile === 'door-red') {
                     this.setOccupant(worldX, worldY, { type: 'obstacle' });
                 }
             });
@@ -133,7 +139,10 @@ export default class GameScene extends Phaser.Scene {
         } else {
             this.player.setPosition(this.playerWorldPos.x, this.playerWorldPos.y);
         }
-        this.player.setDepth(10);
+        // Ensure player is always visible and on top
+        this.player.setDepth(1000);
+        this.player.setVisible(true);
+        this.player.setActive(true);
     }
 
     spawnEntitiesFromChunks() {
@@ -178,21 +187,24 @@ export default class GameScene extends Phaser.Scene {
 
     commitPlayerMove(pos) {
         this.lastMoveTime = this.time.now;
-        this.playerWorldPos = { ...pos };
-
-        // Check if chunk changed
-        const oldChunk = this.worldManager.worldToChunk(this.player.x, this.player.y);
+        
+        // Check if chunk changed BEFORE updating position
+        const oldChunk = this.worldManager.worldToChunk(this.playerWorldPos.x, this.playerWorldPos.y);
         const newChunk = this.worldManager.worldToChunk(pos.x, pos.y);
+        
+        this.playerWorldPos = { ...pos };
+        
         if (oldChunk.chunkX !== newChunk.chunkX || oldChunk.chunkY !== newChunk.chunkY) {
             this.updateWorld();
+        } else {
+            // Only animate if not changing chunks
+            this.tweens.add({
+                targets: this.player,
+                duration: MOVEMENT_DELAY,
+                x: pos.x,
+                y: pos.y,
+            });
         }
-
-        this.tweens.add({
-            targets: this.player,
-            duration: MOVEMENT_DELAY,
-            x: pos.x,
-            y: pos.y,
-        });
     }
 
     setOccupant(x, y, payload) {

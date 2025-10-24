@@ -21,7 +21,7 @@ function buildConfig(parent) {
         parent,
         width: GAME_WIDTH,
         height: GAME_HEIGHT,
-        backgroundColor: '#080b12',
+        backgroundColor: '#0a0a0a',
         pixelArt: true,
         roundPixels: true,
         resolution: resolveResolution(),

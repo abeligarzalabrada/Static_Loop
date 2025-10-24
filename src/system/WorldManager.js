@@ -5,33 +5,35 @@ const TILE_SIZE = 16;
 
 // Chunk presets: define types of chunks with generation rules
 const CHUNK_PRESETS = {
-    forest: {
-        baseTile: 'grass',
+    dungeon_corridor: {
+        baseTile: 'floor',
         features: [
-            { type: 'tree', density: 0.3, cluster: true },
-            { type: 'bush', density: 0.2 },
-            { type: 'rock', density: 0.1 }
+            { type: 'wall', density: 0.15, cluster: true },
+            { type: 'rock', density: 0.1 },
+            { type: 'torch', density: 0.05 }
+        ],
+        enemies: ['spider', 'scorpion'],
+        resources: ['ore', 'wood']
+    },
+    dungeon_room: {
+        baseTile: 'floor',
+        features: [
+            { type: 'wall', density: 0.2, cluster: true },
+            { type: 'rock', density: 0.15 },
+            { type: 'torch', density: 0.08 }
         ],
         enemies: ['wolf', 'spider'],
-        resources: ['wood', 'herb']
+        resources: ['ore', 'key']
     },
-    desert: {
-        baseTile: 'sand',
+    dungeon_crypt: {
+        baseTile: 'floor',
         features: [
-            { type: 'cactus', density: 0.15 },
-            { type: 'rock', density: 0.25 }
+            { type: 'wall', density: 0.25, cluster: true },
+            { type: 'rock', density: 0.2 },
+            { type: 'torch', density: 0.03 }
         ],
-        enemies: ['scorpion'],
-        resources: ['sand', 'cactus_flower']
-    },
-    plains: {
-        baseTile: 'grass',
-        features: [
-            { type: 'flower', density: 0.1 },
-            { type: 'bush', density: 0.05 }
-        ],
-        enemies: ['rabbit', 'deer'],
-        resources: ['wheat', 'herb']
+        enemies: ['scorpion', 'spider'],
+        resources: ['ore', 'key']
     },
     // Add more presets as needed
 };
@@ -82,12 +84,12 @@ export default class WorldManager {
         const seed = chunkX * 10000 + chunkY; // Simple seed based on coords
         const rand = new SeededRandom(seed);
 
-        // Determine preset based on position (simple biome selection)
+        // Determine preset based on position (dungeon biome selection)
         const biomeValue = Math.abs(chunkX + chunkY) % 3;
         let preset;
-        if (biomeValue === 0) preset = CHUNK_PRESETS.forest;
-        else if (biomeValue === 1) preset = CHUNK_PRESETS.desert;
-        else preset = CHUNK_PRESETS.plains;
+        if (biomeValue === 0) preset = CHUNK_PRESETS.dungeon_corridor;
+        else if (biomeValue === 1) preset = CHUNK_PRESETS.dungeon_room;
+        else preset = CHUNK_PRESETS.dungeon_crypt;
 
         const tiles = [];
         for (let y = 0; y < CHUNK_SIZE; y++) {
@@ -175,22 +177,22 @@ export default class WorldManager {
     // Get tile at world position
     getTile(worldX, worldY) {
         const worldSize = CHUNK_SIZE * TILE_SIZE;
-        const chunkX = Math.floor(Math.floor(worldX) / worldSize);
-        const chunkY = Math.floor(Math.floor(worldY) / worldSize);
+        const chunkX = Math.floor(worldX / worldSize);
+        const chunkY = Math.floor(worldY / worldSize);
         const chunk = this.getChunk(chunkX, chunkY);
-        const localX = Math.floor(this.#posMod(Math.floor(worldX), worldSize) / TILE_SIZE);
-        const localY = Math.floor(this.#posMod(Math.floor(worldY), worldSize) / TILE_SIZE);
+        const localX = Math.floor(this.#posMod(worldX, worldSize) / TILE_SIZE);
+        const localY = Math.floor(this.#posMod(worldY, worldSize) / TILE_SIZE);
         return chunk.tiles[localY]?.[localX] ?? 'void';
     }
 
     // Set tile at world position
     setTile(worldX, worldY, tileType) {
         const worldSize = CHUNK_SIZE * TILE_SIZE;
-        const chunkX = Math.floor(Math.floor(worldX) / worldSize);
-        const chunkY = Math.floor(Math.floor(worldY) / worldSize);
+        const chunkX = Math.floor(worldX / worldSize);
+        const chunkY = Math.floor(worldY / worldSize);
         const chunk = this.getChunk(chunkX, chunkY);
-        const localX = Math.floor(this.#posMod(Math.floor(worldX), worldSize) / TILE_SIZE);
-        const localY = Math.floor(this.#posMod(Math.floor(worldY), worldSize) / TILE_SIZE);
+        const localX = Math.floor(this.#posMod(worldX, worldSize) / TILE_SIZE);
+        const localY = Math.floor(this.#posMod(worldY, worldSize) / TILE_SIZE);
         if (chunk.tiles[localY] && chunk.tiles[localY][localX] !== undefined) {
             chunk.tiles[localY][localX] = tileType;
             chunk.lastVisited = Date.now();
@@ -201,10 +203,11 @@ export default class WorldManager {
     // Get chunk coordinates from world position
     worldToChunk(worldX, worldY) {
         const worldSize = CHUNK_SIZE * TILE_SIZE;
-        const chunkX = Math.floor(Math.floor(worldX) / worldSize);
-        const chunkY = Math.floor(Math.floor(worldY) / worldSize);
-        const localX = Math.floor(this.#posMod(Math.floor(worldX), worldSize) / TILE_SIZE);
-        const localY = Math.floor(this.#posMod(Math.floor(worldY), worldSize) / TILE_SIZE);
+        // Handle negative coordinates properly
+        const chunkX = Math.floor(worldX / worldSize);
+        const chunkY = Math.floor(worldY / worldSize);
+        const localX = Math.floor(this.#posMod(worldX, worldSize) / TILE_SIZE);
+        const localY = Math.floor(this.#posMod(worldY, worldSize) / TILE_SIZE);
         return { chunkX, chunkY, localX, localY };
     }
 
