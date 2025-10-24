@@ -19,15 +19,17 @@ npm run dev
 
 The Express server serves the static build from the project root and exposes `/api/mutate-story` as a Gemini-backed mutation endpoint. Visit [http://localhost:3000](http://localhost:3000) once the server is running.
 
-### AI Mutation Flow
+### AI Mutation Flow (Optional)
 
-1. Populate `.env` with your Gemini credentials:
+1. Populate `.env` with your Gemini credentials if you want AI-enhanced mutations:
    ```env
    GEMINI_API_KEY=your_api_key_here
    GEMINI_MODEL=gemini-1.5-flash
    ```
 2. Start the server via `npm run dev`.
-3. From the title screen select **Start New Run**. If the AI call succeeds, StoryManager consumes the returned JSON; otherwise a procedural fallback keeps the run viable.
+3. From the title screen select **Start New Run**. The game uses procedural mutation by default; AI is a bonus if available.
+
+If no AI key is provided, the game uses procedural fallback automatically.
 
 ## Responsive Shell
 
