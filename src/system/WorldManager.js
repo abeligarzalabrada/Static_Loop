@@ -164,23 +164,30 @@ export default class WorldManager {
         this.activeChunks = newActive;
     }
 
+    // Normalize modulo to always be positive
+    #posMod(n, m) {
+        return ((n % m) + m) % m;
+    }
+
     // Get tile at world position
     getTile(worldX, worldY) {
-        const chunkX = Math.floor(worldX / (CHUNK_SIZE * TILE_SIZE));
-        const chunkY = Math.floor(worldY / (CHUNK_SIZE * TILE_SIZE));
+        const worldSize = CHUNK_SIZE * TILE_SIZE;
+        const chunkX = Math.floor(Math.floor(worldX) / worldSize);
+        const chunkY = Math.floor(Math.floor(worldY) / worldSize);
         const chunk = this.getChunk(chunkX, chunkY);
-        const localX = Math.floor((worldX % (CHUNK_SIZE * TILE_SIZE)) / TILE_SIZE);
-        const localY = Math.floor((worldY % (CHUNK_SIZE * TILE_SIZE)) / TILE_SIZE);
-        return chunk.tiles[localY]?.[localX] || 'void';
+        const localX = Math.floor(this.#posMod(Math.floor(worldX), worldSize) / TILE_SIZE);
+        const localY = Math.floor(this.#posMod(Math.floor(worldY), worldSize) / TILE_SIZE);
+        return chunk.tiles[localY]?.[localX] ?? 'void';
     }
 
     // Set tile at world position
     setTile(worldX, worldY, tileType) {
-        const chunkX = Math.floor(worldX / (CHUNK_SIZE * TILE_SIZE));
-        const chunkY = Math.floor(worldY / (CHUNK_SIZE * TILE_SIZE));
+        const worldSize = CHUNK_SIZE * TILE_SIZE;
+        const chunkX = Math.floor(Math.floor(worldX) / worldSize);
+        const chunkY = Math.floor(Math.floor(worldY) / worldSize);
         const chunk = this.getChunk(chunkX, chunkY);
-        const localX = Math.floor((worldX % (CHUNK_SIZE * TILE_SIZE)) / TILE_SIZE);
-        const localY = Math.floor((worldY % (CHUNK_SIZE * TILE_SIZE)) / TILE_SIZE);
+        const localX = Math.floor(this.#posMod(Math.floor(worldX), worldSize) / TILE_SIZE);
+        const localY = Math.floor(this.#posMod(Math.floor(worldY), worldSize) / TILE_SIZE);
         if (chunk.tiles[localY] && chunk.tiles[localY][localX] !== undefined) {
             chunk.tiles[localY][localX] = tileType;
             chunk.lastVisited = Date.now();
@@ -190,12 +197,12 @@ export default class WorldManager {
 
     // Get chunk coordinates from world position
     worldToChunk(worldX, worldY) {
-        return {
-            chunkX: Math.floor(worldX / (CHUNK_SIZE * TILE_SIZE)),
-            chunkY: Math.floor(worldY / (CHUNK_SIZE * TILE_SIZE)),
-            localX: Math.floor((worldX % (CHUNK_SIZE * TILE_SIZE)) / TILE_SIZE),
-            localY: Math.floor((worldY % (CHUNK_SIZE * TILE_SIZE)) / TILE_SIZE)
-        };
+        const worldSize = CHUNK_SIZE * TILE_SIZE;
+        const chunkX = Math.floor(Math.floor(worldX) / worldSize);
+        const chunkY = Math.floor(Math.floor(worldY) / worldSize);
+        const localX = Math.floor(this.#posMod(Math.floor(worldX), worldSize) / TILE_SIZE);
+        const localY = Math.floor(this.#posMod(Math.floor(worldY), worldSize) / TILE_SIZE);
+        return { chunkX, chunkY, localX, localY };
     }
 
     // Convert chunk coords to world position
