@@ -4,35 +4,85 @@ Prototype for a top-down survival + dungeon crawler hybrid built with Phaser 3. 
 
 ## Run Locally
 
-Open `index.html` in a modern browser (Chromium or Firefox recommended). All assets are self-contained and loaded via relative paths and the Phaser CDN.
+### Prerequisites
+
+- Node.js 18 or newer (for the Express server + Gemini proxy)
+- npm (or a compatible package manager)
+- Optional: Python 3.12+ if you need to regenerate sprite PNGs
+
+### Quick Start
+
+```bash
+npm install
+npm run dev
+```
+
+The Express server serves the static build from the project root and exposes `/api/mutate-story` as a Gemini-backed mutation endpoint. Visit [http://localhost:3000](http://localhost:3000) once the server is running.
+
+### AI Mutation Flow
+
+1. Populate `.env` with your Gemini credentials:
+   ```env
+   GEMINI_API_KEY=your_api_key_here
+   GEMINI_MODEL=gemini-1.5-flash
+   ```
+2. Start the server via `npm run dev`.
+3. From the title screen select **Start New Run**. If the AI call succeeds, StoryManager consumes the returned JSON; otherwise a procedural fallback keeps the run viable.
+
+## Responsive Shell
+
+The legacy static container has been replaced with a lightweight React shell (`src/reactApp.js`). It centres the Phaser canvas, preserves the original 16:9 aspect, and scales to the available viewport using the current `devicePixelRatio` to keep pixels crisp on retina hardware. A "Pantalla completa" toggle is always available and touch devices display a hint overlay.
+
+### Resize Guarantees
+
+- Desktop breakpoints (1024×768, 1366×768, 1920×1080) maintain centred letterboxing without stretching sprites.
+- Mobile/tablet orientations fill the usable viewport while preserving input hitboxes.
+- Fullscreen (`F11` or button) reflows instantly without impacting keyboard/mouse/touch controls.
+- Resize listeners are throttled (~120 ms) to avoid layout thrash and keep frame times steady.
 
 ## Project Layout
 
 ```
-index.html              # Game bootstrap & Phaser include
+index.html              # React host + Phaser CDN include
+package.json            # Express + Gemini proxy dependencies
+server/index.js         # API proxy for /api/mutate-story and static hosting
 src/
-  main.js               # Phaser boot configuration
+  main.js               # Phaser boot configuration exported for React
+  reactApp.js           # React entry-point
+  ui/GameShell.js       # Responsive canvas wrapper + fullscreen controls
   scenes/
-    BootScene.js        # Preloads base story JSON & generates textures
+    BootScene.js        # Preloads base story JSON & generated textures
     TitleScene.js       # Start screen + mutation trigger & save resume
     GameScene.js        # Core gameplay (movement, interactions, combat)
     UIScene.js          # HUD, dialog, and status overlays
   system/
     StoryManager.js     # Base JSON loader, mutation orchestration, saves
-    storyMutation.js    # Placeholder mutation logic for procedurally tweaking JSON
+    storyMutation.js    # AI-first mutation flow with procedural fallback
     Inventory.js        # Inventory state & key tracking
     CraftingSystem.js   # Recipe validation and crafting execution
 data/
   baseStory.json        # Base story graph with rooms, NPCs, objects, events
+assets/
+  ...                   # Generated 8-bit sprites, tiles, HUD textures
 ```
 
-## Core Loop Highlights
+## Verifying the Experience
 
-- **Grid traversal** on 16×16 tiles with pushable crates, colored doors, and switches.
-- **Survival systems** for gathering, crafting, and trading resources.
-- **Dungeon mechanics** including keys, switches, and enemy patrols.
-- **Dialog & trading** with NPCs using story-driven text snippets.
-- **Procedural mutation** that tweaks optional content each run while keeping lore anchors intact.
-- **Local saves** stored in `localStorage` so players can resume the latest run from the title screen.
+- **Desktop:** Resize the window across common breakpoints; sprites remain sharp and centred.
+- **Mobile/tablet:** Use device emulation to confirm the canvas fills the viewport and touch input is recognised.
+- **Fullscreen:** Toggle via the UI button or `F11`; gameplay continues smoothly.
+- **High DPI:** Inspect the canvas on a retina display—the resolution multiplier maintains crisp edges.
+- **AI fallback:** Temporarily remove the Gemini key or stop the server; the procedural mutation path still produces valid runs.
 
-Extend the placeholder mutation rules in `src/system/storyMutation.js` to hook up a real LLM-backed generator when ready.
+## Asset Generation
+
+Regenerate character, tile, and UI sprites from `tools/generate_sprites.py` once the Python virtualenv is active:
+
+```bash
+python -m venv .venv
+.\.venv\Scripts\activate
+pip install Pillow
+python tools/generate_sprites.py
+```
+
+The script writes updated PNGs into `assets/characters`, `assets/tiles`, `assets/items`, and `assets/ui`.

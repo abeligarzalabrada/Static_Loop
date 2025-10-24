@@ -163,7 +163,37 @@ function mutateRooms(rooms = [], dialogSnippets) {
     });
 }
 
-export default async function mutateStory(baseStory) {
+async function callAiMutation(baseStory) {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 12000);
+
+    try {
+        const response = await fetch('/api/mutate-story', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ baseStory }),
+            signal: controller.signal,
+        });
+
+        if (!response.ok) {
+            throw new Error(`AI endpoint returned ${response.status}`);
+        }
+
+        const payload = await response.json();
+        if (payload?.story && typeof payload.story === 'object') {
+            return payload.story;
+        }
+
+        throw new Error('AI response missing story payload');
+    } catch (error) {
+        console.warn('[storyMutation] AI mutation fallback engaged', error);
+        return null;
+    } finally {
+        window.clearTimeout(timeout);
+    }
+}
+
+function proceduralMutation(baseStory) {
     if (!baseStory) {
         return null;
     }
@@ -176,6 +206,7 @@ export default async function mutateStory(baseStory) {
             ...(baseStory.meta ?? {}),
             generatedAt: new Date().toISOString(),
             seed: `${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+            source: 'procedural-fallback',
         },
     };
 
@@ -185,4 +216,17 @@ export default async function mutateStory(baseStory) {
     mutated.rooms = mutateRooms(baseStory.rooms, dialogSnippets);
 
     return mutated;
+}
+
+export default async function mutateStory(baseStory) {
+    if (!baseStory) {
+        return null;
+    }
+
+    const aiStory = await callAiMutation(baseStory);
+    if (aiStory) {
+        return aiStory;
+    }
+
+    return proceduralMutation(baseStory);
 }

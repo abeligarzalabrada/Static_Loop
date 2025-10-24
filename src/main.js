@@ -5,36 +5,57 @@ import TitleScene from './scenes/TitleScene.js';
 import GameScene from './scenes/GameScene.js';
 import UIScene from './scenes/UIScene.js';
 
-const GAME_WIDTH = 640;
-const GAME_HEIGHT = 360;
+export const GAME_WIDTH = 640;
+export const GAME_HEIGHT = 360;
 
-const config = {
-    type: Phaser.AUTO,
-    parent: 'game-container',
-    width: GAME_WIDTH,
-    height: GAME_HEIGHT,
-    backgroundColor: '#080b12',
-    pixelArt: true,
-    roundPixels: true,
-    physics: {
-        default: 'arcade',
-        arcade: {
-            debug: false,
-        },
-    },
-    dom: {
-        createContainer: true,
-    },
-    scene: [BootScene, TitleScene, GameScene, UIScene],
-};
+function resolveResolution() {
+    const dpr = window.devicePixelRatio || 1;
+    return Math.min(3, Math.max(1, Math.round(dpr)));
+}
 
-window.addEventListener('load', () => {
-    // Ensure Phaser has been loaded before booting the game loop.
+function buildConfig(parent) {
     if (!Phaser) {
-        console.error('Phaser failed to load. Check the CDN link.');
-        return;
+        throw new Error('Phaser failed to load. Check the CDN link.');
     }
 
-    // eslint-disable-next-line no-new
-    new Phaser.Game(config);
-});
+    return {
+        type: Phaser.AUTO,
+        parent,
+        width: GAME_WIDTH,
+        height: GAME_HEIGHT,
+        backgroundColor: '#080b12',
+        pixelArt: true,
+        roundPixels: true,
+        resolution: resolveResolution(),
+        physics: {
+            default: 'arcade',
+            arcade: {
+                debug: false,
+            },
+        },
+        dom: {
+            createContainer: true,
+        },
+        scale: {
+            mode: Phaser.Scale.FIT,
+            autoCenter: Phaser.Scale.CENTER_BOTH,
+            parent,
+            width: GAME_WIDTH,
+            height: GAME_HEIGHT,
+            expandParent: true,
+        },
+        scene: [BootScene, TitleScene, GameScene, UIScene],
+    };
+}
+
+export function createGame(parentElement) {
+    const parent = parentElement ?? 'game-container';
+    const config = buildConfig(parent);
+    return new Phaser.Game(config);
+}
+
+export function destroyGame(gameInstance) {
+    if (gameInstance && typeof gameInstance.destroy === 'function') {
+        gameInstance.destroy(true);
+    }
+}
