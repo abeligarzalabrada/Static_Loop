@@ -1,4 +1,4 @@
-import React, { StrictMode } from 'https://esm.sh/react@18.3.1';
+import React from 'https://esm.sh/react@18.3.1';
 import { createRoot } from 'https://esm.sh/react-dom@18.3.1/client';
 import GameShell from './ui/GameShell.js';
 
@@ -9,7 +9,9 @@ if (!rootElement) {
 
 const root = createRoot(rootElement);
 root.render(
-    <StrictMode>
-        <GameShell />
-    </StrictMode>
+    React.createElement(
+        React.StrictMode,
+        null,
+        React.createElement(GameShell, null)
+    )
 );
