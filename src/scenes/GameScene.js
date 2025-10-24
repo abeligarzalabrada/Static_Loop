@@ -3,6 +3,8 @@ const Phaser = window.Phaser;
 import StoryManager from '../system/StoryManager.js';
 import Inventory from '../system/Inventory.js';
 import CraftingSystem from '../system/CraftingSystem.js';
+import WorldManager from '../system/WorldManager.js';
+import EntityManager from '../system/EntityManager.js';
 
 const TILE_SIZE = 16;
 const MOVEMENT_DELAY = 125;
@@ -36,9 +38,10 @@ export default class GameScene extends Phaser.Scene {
         this.runData = null;
         this.inventory = null;
         this.crafting = null;
+        this.worldManager = null;
+        this.entityManager = null;
         this.player = null;
-        this.currentRoom = null;
-        this.playerTile = { x: 0, y: 0 };
+        this.playerWorldPos = { x: 0, y: 0 }; // Global world position
         this.occupancy = new Map();
         this.lastMoveTime = 0;
         this.health = 5;
@@ -47,6 +50,7 @@ export default class GameScene extends Phaser.Scene {
         this.switches = [];
         this.doors = new Map();
         this.statusMessages = [];
+        this.renderedChunks = new Set(); // Track rendered chunks
     }
 
     init(data) {
@@ -57,6 +61,8 @@ export default class GameScene extends Phaser.Scene {
     }
 
     create() {
+        this.worldManager = new WorldManager();
+        this.entityManager = new EntityManager(this.worldManager);
         this.inventory = new Inventory();
         this.crafting = new CraftingSystem(this.inventory, this.runData?.craftingRecipes ?? []);
 
@@ -94,8 +100,9 @@ export default class GameScene extends Phaser.Scene {
             runData: this.runData,
         });
 
-        const startRoomId = this.runData?.world?.playerStartRoom ?? this.runData?.rooms?.[0]?.id;
-        this.loadRoom(startRoomId);
+        // Start at world position 0,0
+        this.playerWorldPos = { x: 0, y: 0 };
+        this.updateWorld();
 
         this.time.addEvent({
             delay: 450,
@@ -106,17 +113,12 @@ export default class GameScene extends Phaser.Scene {
         this.updateUI();
     }
 
-    loadRoom(roomId) {
-        const room = this.runData.rooms.find((entry) => entry.id === roomId);
-        if (!room) {
-            console.warn('[GameScene] Missing room', roomId);
-            return;
-        }
+    updateWorld() {
+        const { chunkX, chunkY } = this.worldManager.worldToChunk(this.playerWorldPos.x, this.playerWorldPos.y);
+        this.worldManager.updateLoadedChunks(chunkX, chunkY);
+        this.entityManager.loadEntities();
 
-        if (this.player) {
-            this.player.destroy();
-            this.player = null;
-        }
+        // Clear previous layers
         if (this.mapLayer) {
             this.mapLayer.destroy(true);
         }
@@ -124,24 +126,51 @@ export default class GameScene extends Phaser.Scene {
             this.actorLayer.destroy(true);
         }
 
-        this.currentRoom = room;
         this.mapLayer = this.add.layer();
         this.actorLayer = this.add.layer();
         this.occupancy.clear();
         this.switches = [];
         this.doors.clear();
         this.enemies = [];
+        this.renderedChunks.clear();
 
-        this.physics.world.setBounds(0, 0, room.tiles[0].length * TILE_SIZE, room.tiles.length * TILE_SIZE);
+        // Set large bounds for infinite world
+        this.physics.world.setBounds(-10000, -10000, 20000, 20000);
 
-        this.buildStaticTiles(room);
-        this.buildDynamicObjects(room);
-        this.placePlayer(room);
-        this.spawnNPCs(room);
-        this.spawnResources(room);
-        this.spawnItems(room);
-        this.spawnEnemies(room);
-        this.spawnEvents(room);
+        // Render chunks
+        for (const chunkKey of this.worldManager.activeChunks) {
+            this.renderChunk(chunkKey);
+        }
+
+        // Place or update player
+        this.placePlayer();
+
+        // Spawn entities from chunks
+        this.spawnEntitiesFromChunks();
+    }
+
+    renderChunk(chunkKey) {
+        if (this.renderedChunks.has(chunkKey)) return;
+        this.renderedChunks.add(chunkKey);
+
+        const [cx, cy] = chunkKey.split('_').map(Number);
+        const chunk = this.worldManager.loadedChunks.get(chunkKey);
+        if (!chunk) return;
+
+        const chunkWorldX = cx * 16 * 16; // CHUNK_SIZE * TILE_SIZE
+        const chunkWorldY = cy * 16 * 16;
+
+        chunk.tiles.forEach((row, y) => {
+            row.forEach((tile, x) => {
+                const worldX = chunkWorldX + x * 16 + 8;
+                const worldY = chunkWorldY + y * 16 + 8;
+                const sprite = this.add.image(worldX, worldY, `tile-${tile}`).setOrigin(0.5);
+                this.mapLayer.add(sprite);
+                if (tile === 'wall' || tile === 'tree' || tile === 'rock') {
+                    this.setOccupant(worldX, worldY, { type: 'obstacle' });
+                }
+            });
+        });
     }
 
     buildStaticTiles(room) {
@@ -192,55 +221,39 @@ export default class GameScene extends Phaser.Scene {
         });
     }
 
-    placePlayer(room) {
-        const spawnPos = room.playerSpawn ?? this.runData.world?.playerStartPosition;
-        const fallback = { x: 2, y: 2 };
-        const pos = spawnPos ?? fallback;
-
+    placePlayer() {
         if (!this.player) {
-            this.player = this.add.image(tileToWorld(pos.x), tileToWorld(pos.y), 'player');
+            this.player = this.add.image(this.playerWorldPos.x, this.playerWorldPos.y, 'player');
             this.player.setOrigin(0.5);
             this.actorLayer.add(this.player);
         } else {
-            this.player.setPosition(tileToWorld(pos.x), tileToWorld(pos.y));
+            this.player.setPosition(this.playerWorldPos.x, this.playerWorldPos.y);
         }
-
-        this.playerTile = { ...pos };
-        this.playerDepth = 10;
+        this.player.setDepth(10);
     }
 
-    spawnNPCs(room) {
-        const npcs = (this.runData.npcs ?? []).filter((npc) => npc.roomId === room.id);
-        npcs.forEach((npc) => {
-            const sprite = this.add.image(tileToWorld(npc.position.x), tileToWorld(npc.position.y), 'npc');
-            sprite.setOrigin(0.5);
-            this.actorLayer.add(sprite);
-            sprite.setData('npc-data', npc);
-            sprite.setName(`npc-${npc.id}`);
-            this.setOccupant(npc.position.x, npc.position.y, { type: 'npc', sprite, npc });
-        });
+    spawnEntitiesFromChunks() {
+        for (const chunkKey of this.worldManager.activeChunks) {
+            const entities = this.entityManager.getEntitiesInChunk(...chunkKey.split('_').map(Number));
+            entities.forEach(entity => {
+                this.spawnEntity(entity);
+            });
+        }
     }
 
-    spawnResources(room) {
-        const resources = (this.runData.objects ?? []).filter((obj) => obj.roomId === room.id && obj.type === 'resource');
-        resources.forEach((resource) => {
-            const key = resource.resourceId === 'wood' ? 'resource-wood' : 'resource-ore';
-            const sprite = this.add.image(tileToWorld(resource.position.x), tileToWorld(resource.position.y), key);
-            sprite.setOrigin(0.5);
-            this.actorLayer.add(sprite);
-            this.setOccupant(resource.position.x, resource.position.y, { type: 'resource', sprite, resource });
-        });
-    }
-
-    spawnItems(room) {
-        const items = (this.runData.objects ?? []).filter((obj) => obj.roomId === room.id && obj.type === 'item');
-        items.forEach((item) => {
-            const texture = this.resolveItemTexture(item.itemId);
-            const sprite = this.add.image(tileToWorld(item.position.x), tileToWorld(item.position.y), texture);
-            sprite.setOrigin(0.5);
-            this.actorLayer.add(sprite);
-            this.setOccupant(item.position.x, item.position.y, { type: 'item', sprite, item });
-        });
+    spawnEntity(entity) {
+        const sprite = this.add.image(entity.x, entity.y, `entity-${entity.type}`).setOrigin(0.5);
+        this.actorLayer.add(sprite);
+        sprite.setData('entity', entity);
+        // Depending on type, add to appropriate lists
+        if (entity.type === 'enemy') {
+            this.enemies.push({ sprite, entity });
+        } else if (entity.type === 'npc') {
+            // Add to NPCs
+        } else if (entity.type === 'resource') {
+            this.setOccupant(entity.x, entity.y, { type: 'resource', sprite, entity });
+        }
+        // Add more types as needed
     }
 
     resolveItemTexture(itemId) {
@@ -289,29 +302,25 @@ export default class GameScene extends Phaser.Scene {
             return;
         }
 
-        const targetTile = {
-            x: this.playerTile.x + direction.x,
-            y: this.playerTile.y + direction.y,
+        const targetPos = {
+            x: this.playerWorldPos.x + direction.x * TILE_SIZE,
+            y: this.playerWorldPos.y + direction.y * TILE_SIZE,
         };
 
-        if (!this.isInsideRoom(targetTile)) {
-            return;
-        }
-
-        const occupant = this.getOccupant(targetTile.x, targetTile.y);
+        const occupant = this.getOccupant(targetPos.x, targetPos.y);
         if (!occupant) {
-            this.commitPlayerMove(targetTile);
+            this.commitPlayerMove(targetPos);
             return;
         }
 
         switch (occupant.type) {
-        case 'wall':
+        case 'obstacle':
             return;
         case 'door':
-            this.tryDoorInteraction(occupant, targetTile);
+            this.tryDoorInteraction(occupant, targetPos);
             return;
         case 'box': {
-            this.tryPushBox(occupant, direction, targetTile);
+            this.tryPushBox(occupant, direction, targetPos);
             return;
         }
         case 'item':
@@ -321,26 +330,31 @@ export default class GameScene extends Phaser.Scene {
         case 'switch':
         case 'event':
             // Allow stepping onto interactable items. Interaction resolves afterwards.
-            this.commitPlayerMove(targetTile, () => this.handleStepEvent(occupant));
+            this.commitPlayerMove(targetPos, () => this.handleStepEvent(occupant));
             return;
         default:
-            this.commitPlayerMove(targetTile);
+            this.commitPlayerMove(targetPos);
         }
     }
 
-    isInsideRoom(tile) {
-        const tiles = this.currentRoom.tiles;
-        return tile.x >= 0 && tile.y >= 0 && tile.y < tiles.length && tile.x < tiles[0].length;
-    }
 
-    commitPlayerMove(tile, postMoveCallback) {
+
+    commitPlayerMove(pos, postMoveCallback) {
         this.lastMoveTime = this.time.now;
-        this.playerTile = { ...tile };
+        this.playerWorldPos = { ...pos };
+
+        // Check if chunk changed
+        const oldChunk = this.worldManager.worldToChunk(this.player.x, this.player.y);
+        const newChunk = this.worldManager.worldToChunk(pos.x, pos.y);
+        if (oldChunk.chunkX !== newChunk.chunkX || oldChunk.chunkY !== newChunk.chunkY) {
+            this.updateWorld();
+        }
+
         this.tweens.add({
             targets: this.player,
             duration: MOVEMENT_DELAY,
-            x: tileToWorld(tile.x),
-            y: tileToWorld(tile.y),
+            x: pos.x,
+            y: pos.y,
             onComplete: () => {
                 if (postMoveCallback) {
                     postMoveCallback();
@@ -463,16 +477,12 @@ export default class GameScene extends Phaser.Scene {
     }
 
     handleInteract() {
-        const facing = this.playerTile;
-        const occupant = this.getOccupant(facing.x, facing.y);
-        if (occupant && occupant.type === 'npc') {
-            this.presentDialog(occupant.npc, true);
-            return;
-        }
-
-        const adjacent = this.getAdjacentTiles()
-            .map(({ x, y }) => this.getOccupant(x, y))
-            .find((entry) => entry && ['npc', 'resource', 'event'].includes(entry.type));
+        const adjacent = [
+            { x: this.playerWorldPos.x, y: this.playerWorldPos.y - TILE_SIZE },
+            { x: this.playerWorldPos.x, y: this.playerWorldPos.y + TILE_SIZE },
+            { x: this.playerWorldPos.x - TILE_SIZE, y: this.playerWorldPos.y },
+            { x: this.playerWorldPos.x + TILE_SIZE, y: this.playerWorldPos.y },
+        ].map(pos => this.getOccupant(pos.x, pos.y)).find(entry => entry && ['npc', 'resource', 'event'].includes(entry.type));
 
         if (adjacent) {
             this.handleStepEvent(adjacent);
@@ -538,48 +548,45 @@ export default class GameScene extends Phaser.Scene {
 
             const move = directions.find((dir) => {
                 const candidate = {
-                    x: enemyData.position.x + dir.x,
-                    y: enemyData.position.y + dir.y,
+                    x: enemyData.position.x + dir.x * TILE_SIZE,
+                    y: enemyData.position.y + dir.y * TILE_SIZE,
                 };
-                if (!this.isInsideRoom(candidate)) {
-                    return false;
-                }
-                if (this.playerTile.x === candidate.x && this.playerTile.y === candidate.y) {
+                if (Math.abs(this.playerWorldPos.x - candidate.x) < TILE_SIZE / 2 && Math.abs(this.playerWorldPos.y - candidate.y) < TILE_SIZE / 2) {
                     return true;
                 }
-                return !this.getTileOccupant(candidate.x, candidate.y);
+                return !this.getOccupant(candidate.x, candidate.y);
             });
 
             if (!move) {
                 return;
             }
 
-            const nextTile = {
-                x: enemyData.position.x + move.x,
-                y: enemyData.position.y + move.y,
+            const nextPos = {
+                x: enemyData.position.x + move.x * TILE_SIZE,
+                y: enemyData.position.y + move.y * TILE_SIZE,
             };
 
-            if (nextTile.x === this.playerTile.x && nextTile.y === this.playerTile.y) {
+            if (Math.abs(this.playerWorldPos.x - nextPos.x) < TILE_SIZE / 2 && Math.abs(this.playerWorldPos.y - nextPos.y) < TILE_SIZE / 2) {
                 this.damagePlayer(1);
                 return;
             }
 
-            if (this.getTileOccupant(nextTile.x, nextTile.y)) {
+            if (this.getOccupant(nextPos.x, nextPos.y)) {
                 return;
             }
 
-            const payload = this.getTileOccupant(enemyData.position.x, enemyData.position.y);
+            const payload = this.getOccupant(enemyData.position.x, enemyData.position.y);
             this.setOccupant(enemyData.position.x, enemyData.position.y, null);
-            enemyData.position = { ...nextTile };
+            enemyData.position = { ...nextPos };
             if (payload) {
-                this.setOccupant(nextTile.x, nextTile.y, payload);
+                this.setOccupant(nextPos.x, nextPos.y, payload);
             }
 
             this.tweens.add({
                 targets: enemySprite,
                 duration: 180,
-                x: tileToWorld(nextTile.x),
-                y: tileToWorld(nextTile.y),
+                x: nextPos.x,
+                y: nextPos.y,
             });
         });
     }
@@ -776,13 +783,17 @@ export default class GameScene extends Phaser.Scene {
     }
 
     getOccupant(x, y) {
-        const payload = this.getTileOccupant(x, y);
+        const payload = this.occupancy.get(this.tileKey(x, y));
         if (payload) {
             return payload;
         }
-        if (this.playerTile.x === x && this.playerTile.y === y) {
+        if (Math.abs(this.playerWorldPos.x - x) < TILE_SIZE / 2 && Math.abs(this.playerWorldPos.y - y) < TILE_SIZE / 2) {
             return { type: 'player' };
         }
         return null;
+    }
+
+    tileKey(x, y) {
+        return `${Math.round(x)}_${Math.round(y)}`;
     }
 }

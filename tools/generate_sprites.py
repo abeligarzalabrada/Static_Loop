@@ -221,6 +221,74 @@ def draw_hud_dialog(image):
     draw.rectangle([1, 1, image.width - 2, image.height - 2], outline=hex_to_rgba("#68c4ff"))
 
 
+# New sprites for infinite world
+def draw_tile_grass(image):
+    draw = ImageDraw.Draw(image)
+    draw.rectangle([0, 0, 16, 16], fill=hex_to_rgba("#4a7c4a"))
+
+def draw_tile_sand(image):
+    draw = ImageDraw.Draw(image)
+    draw.rectangle([0, 0, 16, 16], fill=hex_to_rgba("#f4e4a6"))
+
+def draw_tile_tree(image):
+    draw = ImageDraw.Draw(image)
+    draw.rectangle([6, 8, 10, 16], fill=hex_to_rgba("#8f7346"))  # trunk
+    draw.ellipse([2, 2, 14, 10], fill=hex_to_rgba("#2d5a2d"))  # leaves
+
+def draw_tile_bush(image):
+    draw = ImageDraw.Draw(image)
+    draw.ellipse([4, 6, 12, 14], fill=hex_to_rgba("#4a7c4a"))
+
+def draw_tile_rock(image):
+    draw = ImageDraw.Draw(image)
+    draw.ellipse([2, 2, 14, 14], fill=hex_to_rgba("#7a7a7a"))
+
+def draw_tile_cactus(image):
+    draw = ImageDraw.Draw(image)
+    draw.rectangle([6, 4, 10, 16], fill=hex_to_rgba("#2d5a2d"))
+    draw.rectangle([4, 6, 12, 8], fill=hex_to_rgba("#2d5a2d"))
+    draw.rectangle([4, 10, 12, 12], fill=hex_to_rgba("#2d5a2d"))
+
+def draw_tile_flower(image):
+    draw = ImageDraw.Draw(image)
+    draw.rectangle([7, 12, 9, 16], fill=hex_to_rgba("#8f7346"))  # stem
+    draw.ellipse([4, 4, 12, 12], fill=hex_to_rgba("#ff6b9d"))  # flower
+
+def draw_entity_wolf(image):
+    draw = ImageDraw.Draw(image)
+    draw.ellipse([4, 6, 12, 14], fill=hex_to_rgba("#7a7a7a"))  # body
+    draw.ellipse([2, 4, 8, 10], fill=hex_to_rgba("#7a7a7a"))  # head
+    draw.ellipse([6, 2, 10, 6], fill=hex_to_rgba("#ff6b9d"))  # ears
+
+def draw_entity_spider(image):
+    draw = ImageDraw.Draw(image)
+    draw.ellipse([6, 6, 10, 10], fill=hex_to_rgba("#1f1f1f"))  # body
+    draw.line([8, 6, 4, 2], fill=hex_to_rgba("#1f1f1f"), width=1)
+    draw.line([8, 6, 12, 2], fill=hex_to_rgba("#1f1f1f"), width=1)
+    draw.line([8, 10, 4, 14], fill=hex_to_rgba("#1f1f1f"), width=1)
+    draw.line([8, 10, 12, 14], fill=hex_to_rgba("#1f1f1f"), width=1)
+
+def draw_entity_scorpion(image):
+    draw = ImageDraw.Draw(image)
+    draw.ellipse([6, 8, 10, 12], fill=hex_to_rgba("#bf3f5a"))  # body
+    draw.ellipse([4, 6, 8, 10], fill=hex_to_rgba("#bf3f5a"))  # head
+    draw.line([10, 10, 14, 8], fill=hex_to_rgba("#bf3f5a"), width=2)  # tail
+
+def draw_entity_rabbit(image):
+    draw = ImageDraw.Draw(image)
+    draw.ellipse([4, 8, 12, 14], fill=hex_to_rgba("#f4e4a6"))  # body
+    draw.ellipse([6, 4, 10, 8], fill=hex_to_rgba("#f4e4a6"))  # head
+    draw.ellipse([2, 2, 6, 6], fill=hex_to_rgba("#f4e4a6"))  # ear
+    draw.ellipse([10, 2, 14, 6], fill=hex_to_rgba("#f4e4a6"))  # ear
+
+def draw_entity_deer(image):
+    draw = ImageDraw.Draw(image)
+    draw.ellipse([4, 6, 12, 12], fill=hex_to_rgba("#8f7346"))  # body
+    draw.ellipse([6, 2, 10, 6], fill=hex_to_rgba("#8f7346"))  # head
+    draw.line([8, 2, 10, 0], fill=hex_to_rgba("#8f7346"), width=1)  # antler
+    draw.line([8, 2, 6, 0], fill=hex_to_rgba("#8f7346"), width=1)  # antler
+
+
 def draw_door_opened(image):
     draw = ImageDraw.Draw(image)
     draw.rectangle([0, 0, image.width - 1, image.height - 1], fill=hex_to_rgba("#101829"))
@@ -468,6 +536,18 @@ SPRITES = [
             [0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0],
         ],
     },
+    {"name": "tile-grass", "category": "tiles", "painter": draw_tile_grass},
+    {"name": "tile-sand", "category": "tiles", "painter": draw_tile_sand},
+    {"name": "tile-tree", "category": "tiles", "painter": draw_tile_tree},
+    {"name": "tile-bush", "category": "tiles", "painter": draw_tile_bush},
+    {"name": "tile-rock", "category": "tiles", "painter": draw_tile_rock},
+    {"name": "tile-cactus", "category": "tiles", "painter": draw_tile_cactus},
+    {"name": "tile-flower", "category": "tiles", "painter": draw_tile_flower},
+    {"name": "entity-wolf", "category": "entities", "painter": draw_entity_wolf},
+    {"name": "entity-spider", "category": "entities", "painter": draw_entity_spider},
+    {"name": "entity-scorpion", "category": "entities", "painter": draw_entity_scorpion},
+    {"name": "entity-rabbit", "category": "entities", "painter": draw_entity_rabbit},
+    {"name": "entity-deer", "category": "entities", "painter": draw_entity_deer},
     {"name": "tile-floor", "category": "tiles", "painter": draw_tile_floor},
     {"name": "tile-wall", "category": "tiles", "painter": draw_tile_wall},
     {"name": "tile-switch-off", "category": "tiles", "painter": make_switch_painter(False)},

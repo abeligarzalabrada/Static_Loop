@@ -60,7 +60,69 @@ export default class UIScene extends Phaser.Scene {
         });
         this.statusText.setOrigin(1, 1);
 
+        // Controls hint
+        this.controlsText = this.add.text(8, this.scale.height - 24, 'WASD/Arrows: Move | Space/E: Interact | F: Attack | C: Craft', {
+            fontFamily: 'monospace',
+            fontSize: 10,
+            color: '#87f0ff',
+        });
+
         this.createDialogUI();
+        this.createTouchControls();
+    }
+
+    createTouchControls() {
+        // Only show on touch devices
+        if (!this.sys.game.device.input.touch) return;
+
+        const buttonSize = 64;
+        const margin = 16;
+
+        // Movement buttons
+        this.upButton = this.add.circle(margin + buttonSize / 2, this.scale.height - margin - buttonSize * 2 - buttonSize / 2, buttonSize / 2, 0x334870, 0.8);
+        this.upButton.setStrokeStyle(2, 0x87f0ff);
+        this.upButton.setInteractive();
+        this.upButton.on('pointerdown', () => this.gameScene.tryMove({ x: 0, y: -1 }));
+
+        this.downButton = this.add.circle(margin + buttonSize / 2, this.scale.height - margin - buttonSize / 2, buttonSize / 2, 0x334870, 0.8);
+        this.downButton.setStrokeStyle(2, 0x87f0ff);
+        this.downButton.setInteractive();
+        this.downButton.on('pointerdown', () => this.gameScene.tryMove({ x: 0, y: 1 }));
+
+        this.leftButton = this.add.circle(margin - buttonSize / 2 + buttonSize, this.scale.height - margin - buttonSize, buttonSize / 2, 0x334870, 0.8);
+        this.leftButton.setStrokeStyle(2, 0x87f0ff);
+        this.leftButton.setInteractive();
+        this.leftButton.on('pointerdown', () => this.gameScene.tryMove({ x: -1, y: 0 }));
+
+        this.rightButton = this.add.circle(margin + buttonSize * 2 - buttonSize / 2, this.scale.height - margin - buttonSize, buttonSize / 2, 0x334870, 0.8);
+        this.rightButton.setStrokeStyle(2, 0x87f0ff);
+        this.rightButton.setInteractive();
+        this.rightButton.on('pointerdown', () => this.gameScene.tryMove({ x: 1, y: 0 }));
+
+        // Action buttons
+        this.interactButton = this.add.rectangle(this.scale.width - margin - buttonSize, this.scale.height - margin - buttonSize, buttonSize, buttonSize, 0x334870, 0.8);
+        this.interactButton.setStrokeStyle(2, 0x87f0ff);
+        this.interactButton.setInteractive();
+        this.interactButton.on('pointerdown', () => this.gameScene.handleInteract());
+
+        const interactText = this.add.text(this.interactButton.x, this.interactButton.y, 'E', {
+            fontFamily: 'monospace',
+            fontSize: 16,
+            color: '#f3f6ff',
+        });
+        interactText.setOrigin(0.5);
+
+        this.attackButton = this.add.rectangle(this.scale.width - margin - buttonSize * 2 - margin, this.scale.height - margin - buttonSize, buttonSize, buttonSize, 0x334870, 0.8);
+        this.attackButton.setStrokeStyle(2, 0x87f0ff);
+        this.attackButton.setInteractive();
+        this.attackButton.on('pointerdown', () => this.gameScene.handleAttack());
+
+        const attackText = this.add.text(this.attackButton.x, this.attackButton.y, 'F', {
+            fontFamily: 'monospace',
+            fontSize: 16,
+            color: '#f3f6ff',
+        });
+        attackText.setOrigin(0.5);
     }
 
     createDialogUI() {
