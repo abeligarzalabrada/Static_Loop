@@ -9,8 +9,7 @@ const CHUNK_PRESETS = {
         baseTile: 'floor',
         features: [
             { type: 'wall', density: 0.15, cluster: true },
-            { type: 'rock', density: 0.1 },
-            { type: 'torch', density: 0.05 }
+            { type: 'rock', density: 0.1 }
         ],
         enemies: ['spider', 'scorpion'],
         resources: ['ore', 'wood']
@@ -19,8 +18,7 @@ const CHUNK_PRESETS = {
         baseTile: 'floor',
         features: [
             { type: 'wall', density: 0.2, cluster: true },
-            { type: 'rock', density: 0.15 },
-            { type: 'torch', density: 0.08 }
+            { type: 'rock', density: 0.15 }
         ],
         enemies: ['wolf', 'spider'],
         resources: ['ore', 'key']
@@ -29,8 +27,7 @@ const CHUNK_PRESETS = {
         baseTile: 'floor',
         features: [
             { type: 'wall', density: 0.25, cluster: true },
-            { type: 'rock', density: 0.2 },
-            { type: 'torch', density: 0.03 }
+            { type: 'rock', density: 0.2 }
         ],
         enemies: ['scorpion', 'spider'],
         resources: ['ore', 'key']
@@ -121,11 +118,28 @@ export default class WorldManager {
             }
         });
 
+        // Generate entities based on preset
+        const entities = [];
+        const entityCount = Math.floor(rand.random() * 3); // 0-2 entities per chunk
+        for (let i = 0; i < entityCount; i++) {
+            const enemyType = preset.enemies[Math.floor(rand.random() * preset.enemies.length)];
+            const entityX = Math.floor(rand.random() * CHUNK_SIZE) * TILE_SIZE + TILE_SIZE / 2;
+            const entityY = Math.floor(rand.random() * CHUNK_SIZE) * TILE_SIZE + TILE_SIZE / 2;
+            entities.push({
+                id: `chunk_${chunkX}_${chunkY}_${i}`,
+                type: enemyType,
+                x: entityX,
+                y: entityY,
+                chunkKey: `${chunkX}_${chunkY}`,
+                created: Date.now()
+            });
+        }
+
         return {
             x: chunkX,
             y: chunkY,
             tiles,
-            entities: [], // Will be populated by EntityManager
+            entities,
             lastVisited: Date.now()
         };
     }
