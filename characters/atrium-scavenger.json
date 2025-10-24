@@ -1,0 +1,30 @@
+{
+    "sourceId": "scavenger",
+    "displayName": "Atrium Scavenger",
+    "dialogSource": "data/baseStory.json:npcs[scavenger].dialog",
+    "role": "Resource trader exchanging wood for torches.",
+    "sprite": {
+        "tileSize": "16x16",
+        "palette": ["#2a3042", "#8f9c4d", "#ffd27f", "#f0f4ff"],
+        "keyFrames": {
+            "idle": ["frame0", "frame1"],
+            "walk": ["frame0", "frame1", "frame2", "frame3"],
+            "trade": ["frame2", "frame3"]
+        },
+        "notes": "Compact sprite with scavenged backpack. Add a flickering torch strapped to their side for readability."
+    },
+    "trade": {
+        "requires": { "wood": 3 },
+        "gives": { "torch": 1 },
+        "flavor": "Trades bundle of wood for a freshly wired static torch."
+    },
+    "behavior": {
+        "interaction": "Offers trades if player holds required wood. Provides tips on switches and box puzzles.",
+        "roamRooms": ["atrium", "hallway"]
+    },
+    "aiGuidance": [
+        "Feel free to shuffle small talk lines with dialog snippets.",
+        "Keep trade contract intact; only remix flavor text.",
+        "Maintain light-hearted, scrappy tone."
+    ]
+}

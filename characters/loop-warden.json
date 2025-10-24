@@ -1,0 +1,30 @@
+{
+    "sourceId": "warden",
+    "displayName": "Loop Warden",
+    "dialogSource": "data/baseStory.json:npcs[warden].dialog",
+    "role": "Primary quest giver and gatekeeper for blue keys.",
+    "sprite": {
+        "tileSize": "16x16",
+        "palette": ["#1f2840", "#4a7cb5", "#ffd27f", "#e0b874"],
+        "keyFrames": {
+            "idle": ["frame0", "frame1"],
+            "walk": ["frame0", "frame1", "frame2", "frame3"]
+        },
+        "notes": "Tall silhouette with cyan cloak trim. Maintain 1px midnight outline and a static shimmer animation on the pauldrons."
+    },
+    "trade": {
+        "requires": { "gem": 1 },
+        "gives": { "key:blue": 1 },
+        "flavor": "Attunes stabiliser shards into a blue access key."
+    },
+    "behavior": {
+        "interaction": "Always available. Opens blue-key doors when player holds correct key.",
+        "mustExistInBase": true,
+        "roomId": "atrium"
+    },
+    "aiGuidance": [
+        "Do not rename this NPC during mutation.",
+        "Dialog can be remixed with snippets but keep mission briefing intact.",
+        "Limit emotional tone to calm, authoritative, and hopeful."
+    ]
+}

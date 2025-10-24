@@ -3,11 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Satic Loop</title>
+    <title>Static Loop</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: #080b12;
+            color: #f0f4ff;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            height: 100%;
+        }
+
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        canvas {
+            image-rendering: pixelated;
+            border: 1px solid #1f2840;
+            box-shadow: 0 0 32px rgba(23, 77, 136, 0.45);
+        }
+    </style>
 </head>
 <body>
-    <h1>
-       Static Loop in production mode
-    </h1>
+    <div id="game-container"></div>
+    
+
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.js" crossorigin="anonymous"></script>
+    <script type="module" src="./src/main.js"></script>
 </body>
 </html>

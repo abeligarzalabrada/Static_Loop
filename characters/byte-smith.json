@@ -1,0 +1,30 @@
+{
+    "sourceId": "byte-smith",
+    "displayName": "Byte Smith",
+    "dialogSource": "data/baseStory.json:npcs[byte-smith].dialog",
+    "role": "Optional machinist vendor who fabricates toolkits from ore and scrap.",
+    "sprite": {
+        "tileSize": "16x16",
+        "palette": ["#1f2840", "#4ab55b", "#b54a4a", "#ffd27f"],
+        "keyFrames": {
+            "idle": ["frame0", "frame1"],
+            "walk": ["frame0", "frame1", "frame2", "frame3"],
+            "forge": ["frame4", "frame5", "frame4", "frame6"]
+        },
+        "notes": "Chunky apron sprite with glowing visor. Add looping spark particles during forge animation for readability."
+    },
+    "trade": {
+        "requires": { "ore": 1, "scrap": 1 },
+        "gives": { "toolkit": 1 },
+        "flavor": "Assembles a compact toolkit that unlocks advanced crafting options."
+    },
+    "behavior": {
+        "interaction": "Sells toolkits when resources are provided. Offers hint about 8-bit forge frequency.",
+        "roamRooms": ["hallway"]
+    },
+    "aiGuidance": [
+        "Allow dialog mutation to emphasize craftsmanship or glitch humor.",
+        "Never alter the trade's input or output items without designer approval.",
+        "Color palette should stay in neon-green and warm-red highlights to stand out in low light."
+    ]
+}
